@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pencarian BFS — Peta Interaktif</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ukuran-sel: 28px;
+        --jarak: 2px;
+        --bg-peta: #e6f0ea;
+        --jalan: #f1f3f4;
+        --dikunjungi: #cfe8ff;
+        --jalur: #ffde59;
+        --hambatan: #2f2f2f;
+        --awal: #2f9e44;
+        --tujuan: #d6336c;
+      }
+
+      body {
+        font-family: Inter, Arial, sans-serif;
+        background: linear-gradient(#f6faf6, #eaf3ea);
+        padding: 18px;
+      }
+
+      #grid {
+        display: grid;
+        grid-template-columns: repeat(30, var(--ukuran-sel));
+        grid-gap: var(--jarak);
+        background: var(--bg-peta);
+        padding: 12px;
+        border-radius: 12px;
+        box-shadow: 0 6px 18px rgba(20, 60, 20, 0.06);
+        margin: 0 auto;
+      }
+
+      .sel {
+        width: var(--ukuran-sel);
+        height: var(--ukuran-sel);
+        background: var(--jalan);
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        user-select: none;
+        transition: background 0.25s;
+      }
+
+      .sel.hambatan {
+        background: var(--hambatan);
+      }
+      .sel.dikunjungi {
+        background: var(--dikunjungi);
+      }
+      .sel.jalur {
+        background: var(--jalur);
+        box-shadow: 0 0 6px rgba(255, 222, 89, 0.45);
+      }
+      .sel.awal {
+        background: var(--awal);
+        color: white;
+        font-weight: 700;
+      }
+      .sel.tujuan {
+        background: var(--tujuan);
+        color: white;
+        font-weight: 700;
+      }
+
+      .card {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border: none;
+        margin-bottom: 20px;
+      }
+
+      .card-header {
+        font-weight: bold;
+      }
+
+      .keterangan {
+        margin-top: 20px;
+      }
+
+      .btn {
+        margin: 2px;
+      }
+
+      .form-range {
+        width: 150px;
+        display: inline-block;
+      }
+
+      .form-check {
+        display: inline-block;
+        margin-left: 15px;
+      }
+
+      .form-select {
+        width: auto;
+        display: inline-block;
+      }
+
+      @media (max-width: 768px) {
+        #grid {
+          grid-template-columns: repeat(15, var(--ukuran-sel));
+          overflow-x: auto;
+          max-width: 100%;
+        }
+
+        .kontrol {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .form-range,
+        .form-check,
+        .form-select {
+          margin-top: 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-12">
+          <div class="card mb-4">
+            <div class="card-body text-center">
+              <h2 class="card-title">Pencarian BFS — Peta Interaktif</h2>
+              <p class="card-text">
+                Visualisasi algoritma Breadth-First Search (BFS) untuk mencari
+                jalur terpendek
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row justify-content-center">
+        <div class="col-12">
+          <div class="card mb-4">
+            <div class="card-header bg-primary text-white">Kontrol</div>
+            <div class="card-body">
+              <div class="kontrol d-flex flex-wrap align-items-center">
+                <button id="tombolBersih" class="btn btn-outline-danger">
+                  Bersihkan Semua
+                </button>
+                <button id="tombolReset" class="btn btn-outline-warning">
+                  Reset Start/Goal
+                </button>
+                <button id="tombolJalan" class="btn btn-success">
+                  Jalankan BFS
+                </button>
+
+                <div class="ms-3">
+                  <label for="kecepatan" class="form-label">Kecepatan:</label>
+                  <input
+                    id="kecepatan"
+                    type="range"
+                    class="form-range"
+                    min="10"
+                    max="300"
+                    value="60"
+                  />
+                </div>
+
+                <div class="form-check ms-3">
+                  <input
+                    id="diagonal"
+                    type="checkbox"
+                    class="form-check-input"
+                  />
+                  <label for="diagonal" class="form-check-label"
+                    >Izinkan diagonal</label
+                  >
+                </div>
+
+                <div class="ms-3">
+                  <select id="mode" class="form-select">
+                    <option value="tempat">Tempatkan Start/Goal</option>
+                    <option value="hambatan">
+                      Gambar Hambatan
+                    </option>
+                    <option value="hapus">Hapus Hambatan</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row justify-content-center">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header bg-info text-white">Peta</div>
+            <div class="card-body d-flex justify-content-center">
+              <div id="grid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row justify-content-center">
+        <div class="col-12">
+          <div class="card keterangan">
+            <div class="card-header bg-secondary text-white">Keterangan</div>
+            <div class="card-body">
+              <h5>Cara Menggunakan:</h5>
+              <ol>
+                <li>
+                  Pilih mode "Tempatkan Start/Goal" dan klik pada peta untuk
+                  menempatkan titik awal (S) dan tujuan (G)
+                </li>
+                <li>
+                  Gunakan mode "Gambar Hambatan" atau tekan Shift+Click untuk
+                  menempatkan hambatan (dinding)
+                </li>
+                <li>Atur kecepatan animasi dengan slider kecepatan</li>
+                <li>
+                  Pilih apakah ingin mengizinkan pergerakan diagonal atau tidak
+                </li>
+                <li>
+                  Klik tombol "Jalankan BFS" untuk memulai pencarian jalur
+                </li>
+              </ol>
+
+              <h5>Keterangan Warna:</h5>
+              <div class="d-flex flex-wrap">
+                <div class="me-4 mb-2">
+                  <span class="badge bg-success">Hijau</span> = Titik Awal (S)
+                </div>
+                <div class="me-4 mb-2">
+                  <span class="badge bg-danger">Merah</span> = Titik Tujuan (G)
+                </div>
+                <div class="me-4 mb-2">
+                  <span class="badge bg-primary">Biru</span> = Area yang telah
+                  dikunjungi
+                </div>
+                <div class="me-4 mb-2">
+                  <span class="badge bg-warning">Kuning</span> = Jalur yang
+                  ditemukan
+                </div>
+                <div class="me-4 mb-2">
+                  <span class="badge bg-dark">Hitam</span> = Hambatan
+                </div>
+              </div>
+
+              <h5>Tentang BFS:</h5>
+              <p>
+                Breadth-First Search (BFS) adalah algoritma pencarian yang
+                menjelajahi semua simpul pada level saat ini sebelum berpindah
+                ke level berikutnya. Dalam konteks pencarian jalur, BFS menjamin
+                ditemukannya jalur terpendek (dalam jumlah langkah) dari titik
+                awal ke tujuan.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+      // ================================
+      // KONFIGURASI GRID
+      // ================================
+      const jumlahBaris = 25;
+      const jumlahKolom = 30;
+
+      // ================================
+      // DOM ELEMENT
+      // ================================
+      const elemenGrid = document.getElementById("grid");
+      const tombolBFS = document.getElementById("tombolJalan");
+      const tombolBersih = document.getElementById("tombolBersih");
+      const tombolReset = document.getElementById("tombolReset");
+      const elemenKecepatan = document.getElementById("kecepatan");
+      const cekDiagonal = document.getElementById("diagonal");
+      const pilihMode = document.getElementById("mode");
+
+      // ================================
+      // VARIABEL PETA
+      // ================================
+      let gridSel = [];
+      let titikAwal = null;
+      let titikTujuan = null;
+      let sedangBerjalan = false;
+
+      // ================================
+      // MEMBANGUN GRID
+      // ================================
+      for (let baris = 0; baris < jumlahBaris; baris++) {
+        gridSel[baris] = [];
+        for (let kolom = 0; kolom < jumlahKolom; kolom++) {
+          const elemenSel = document.createElement("div");
+          elemenSel.className = "sel";
+          elemenSel.dataset.baris = baris;
+          elemenSel.dataset.kolom = kolom;
+
+          elemenSel.addEventListener("click", klikSel);
+
+          elemenGrid.appendChild(elemenSel);
+          gridSel[baris][kolom] = elemenSel;
+        }
+      }
+
+      // ================================
+      // EVENT CLICK
+      // ================================
+      function klikSel(e) {
+        if (sedangBerjalan) return;
+
+        const baris = Number(this.dataset.baris);
+        const kolom = Number(this.dataset.kolom);
+        const mode = pilihMode.value;
+        const shift = e.shiftKey;
+
+        if (mode === "tempat") {
+          if (!titikAwal) {
+            titikAwal = { baris, kolom };
+            this.classList.add("awal");
+            this.textContent = "S";
+            return;
+          }
+          if (
+            !titikTujuan &&
+            !(titikAwal.baris === baris && titikAwal.kolom === kolom)
+          ) {
+            titikTujuan = { baris, kolom };
+            this.classList.add("tujuan");
+            this.textContent = "G";
+            return;
+          }
+        }
+
+        if (mode === "hambatan" || shift) {
+          toggleHambatan(baris, kolom);
+          return;
+        }
+
+        if (mode === "hapus") {
+          hapusHambatan(baris, kolom);
+        }
+      }
+
+      function toggleHambatan(baris, kolom) {
+        const elemen = gridSel[baris][kolom];
+        if (
+          elemen.classList.contains("awal") ||
+          elemen.classList.contains("tujuan")
+        )
+          return;
+        elemen.classList.toggle("hambatan");
+      }
+
+      function hapusHambatan(baris, kolom) {
+        gridSel[baris][kolom].classList.remove("hambatan");
+      }
+
+      // ================================
+      // BERSIHKAN ALL
+      // ================================
+      tombolBersih.addEventListener("click", () => {
+        if (sedangBerjalan) {
+          Swal.fire({
+            icon: "warning",
+            title: "Sedang Berjalan",
+            text: "Tunggu hingga algoritma selesai!",
+            confirmButtonColor: "#3085d6",
+          });
+          return;
+        }
+
+        for (let baris = 0; baris < jumlahBaris; baris++) {
+          for (let kolom = 0; kolom < jumlahKolom; kolom++) {
+            gridSel[baris][kolom].className = "sel";
+            gridSel[baris][kolom].textContent = "";
+          }
+        }
+
+        titikAwal = null;
+        titikTujuan = null;
+
+        Swal.fire({
+          icon: "success",
+          title: "Berhasil",
+          text: "Peta telah dibersihkan!",
+          confirmButtonColor: "#3085d6",
+        });
+      });
+
+      // ================================
+      // RESET START/GOAL
+      // ================================
+      tombolReset.addEventListener("click", () => {
+        if (sedangBerjalan) {
+          Swal.fire({
+            icon: "warning",
+            title: "Sedang Berjalan",
+            text: "Tunggu hingga algoritma selesai!",
+            confirmButtonColor: "#3085d6",
+          });
+          return;
+        }
+
+        for (let baris = 0; baris < jumlahBaris; baris++) {
+          for (let kolom = 0; kolom < jumlahKolom; kolom++) {
+            gridSel[baris][kolom].classList.remove("awal", "tujuan");
+            if (
+              gridSel[baris][kolom].textContent === "S" ||
+              gridSel[baris][kolom].textContent === "G"
+            ) {
+              gridSel[baris][kolom].textContent = "";
+            }
+          }
+        }
+
+        titikAwal = null;
+        titikTujuan = null;
+
+        Swal.fire({
+          icon: "success",
+          title: "Berhasil",
+          text: "Titik awal dan tujuan telah direset!",
+          confirmButtonColor: "#3085d6",
+        });
+      });
+
+      // ================================
+      // AMBIL TETANGGA
+      // ================================
+      function ambilTetangga(baris, kolom) {
+        const deltas4 = [
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ];
+
+        const deltas8 = [...deltas4, [1, 1], [1, -1], [-1, 1], [-1, -1]];
+
+        const pilihanDelta = cekDiagonal.checked ? deltas8 : deltas4;
+
+        const hasil = [];
+
+        for (const delta of pilihanDelta) {
+          const barisTetangga = baris + delta[0];
+          const kolomTetangga = kolom + delta[1];
+
+          if (
+            barisTetangga >= 0 &&
+            barisTetangga < jumlahBaris &&
+            kolomTetangga >= 0 &&
+            kolomTetangga < jumlahKolom
+          ) {
+            hasil.push([barisTetangga, kolomTetangga]);
+          }
+        }
+
+        return hasil;
+      }
+
+      // ================================
+      // BFS DENGAN ANIMASI
+      // ================================
+      tombolBFS.addEventListener("click", () => {
+        if (!titikAwal || !titikTujuan) {
+          Swal.fire({
+            icon: "error",
+            title: "Titik Belum Ditentukan",
+            text: "Tentukan Start dan Goal dulu!",
+            confirmButtonColor: "#3085d6",
+          });
+          return;
+        }
+        jalankanBFS();
+      });
+
+      async function jalankanBFS() {
+        sedangBerjalan = true;
+
+        // bersihkan jejak lama
+        for (let baris = 0; baris < jumlahBaris; baris++) {
+          for (let kolom = 0; kolom < jumlahKolom; kolom++) {
+            gridSel[baris][kolom].classList.remove("dikunjungi", "jalur");
+            if (gridSel[baris][kolom].classList.contains("awal"))
+              gridSel[baris][kolom].textContent = "S";
+            if (gridSel[baris][kolom].classList.contains("tujuan"))
+              gridSel[baris][kolom].textContent = "G";
+          }
+        }
+
+        const antrianBFS = [];
+        const sudahDikunjungi = Array.from({ length: jumlahBaris }, () =>
+          Array(jumlahKolom).fill(false)
+        );
+
+        const indukNode = Array.from({ length: jumlahBaris }, () =>
+          Array(jumlahKolom).fill(null)
+        );
+
+        antrianBFS.push(titikAwal);
+        sudahDikunjungi[titikAwal.baris][titikAwal.kolom] = true;
+
+        const jeda = () =>
+          new Promise((resolve) =>
+            setTimeout(resolve, 310 - Number(elemenKecepatan.value))
+          );
+
+        let ditemukan = false;
+
+        while (antrianBFS.length) {
+          const nodeSekarang = antrianBFS.shift();
+          const baris = nodeSekarang.baris;
+          const kolom = nodeSekarang.kolom;
+
+          if (
+            !(baris === titikAwal.baris && kolom === titikAwal.kolom) &&
+            !(baris === titikTujuan.baris && kolom === titikTujuan.kolom)
+          ) {
+            gridSel[baris][kolom].classList.add("dikunjungi");
+            await jeda();
+          }
+
+          if (baris === titikTujuan.baris && kolom === titikTujuan.kolom) {
+            ditemukan = true;
+            break;
+          }
+
+          const tetangga = ambilTetangga(baris, kolom);
+
+          for (const [barisTetangga, kolomTetangga] of tetangga) {
+            if (sudahDikunjungi[barisTetangga][kolomTetangga]) continue;
+            if (
+              gridSel[barisTetangga][kolomTetangga].classList.contains(
+                "hambatan"
+              )
+            )
+              continue;
+
+            sudahDikunjungi[barisTetangga][kolomTetangga] = true;
+            indukNode[barisTetangga][kolomTetangga] = { baris, kolom };
+
+            antrianBFS.push({ baris: barisTetangga, kolom: kolomTetangga });
+          }
+        }
+
+        // ========================================
+        // REKONSTRUKSI JALUR
+        // ========================================
+        if (ditemukan) {
+          let nodeSaatIni = titikTujuan;
+
+          while (
+            !(
+              nodeSaatIni.baris === titikAwal.baris &&
+              nodeSaatIni.kolom === titikAwal.kolom
+            )
+          ) {
+            if (
+              !(
+                nodeSaatIni.baris === titikTujuan.baris &&
+                nodeSaatIni.kolom === titikTujuan.kolom
+              )
+            ) {
+              gridSel[nodeSaatIni.baris][nodeSaatIni.kolom].classList.remove(
+                "dikunjungi"
+              );
+              gridSel[nodeSaatIni.baris][nodeSaatIni.kolom].classList.add(
+                "jalur"
+              );
+            }
+
+            nodeSaatIni = indukNode[nodeSaatIni.baris][nodeSaatIni.kolom];
+
+            await jeda();
+          }
+
+          Swal.fire({
+            icon: "success",
+            title: "Jalur Ditemukan!",
+            text: "Algoritma BFS berhasil menemukan jalur terpendek.",
+            confirmButtonColor: "#3085d6",
+          });
+        } else {
+          Swal.fire({
+            icon: "error",
+            title: "Jalur Tidak Ditemukan",
+            text: "Tidak ada jalur yang tersedia dari titik awal ke tujuan.",
+            confirmButtonColor: "#3085d6",
+          });
+        }
+
+        sedangBerjalan = false;
+      }
+    </script>
+  </body>
+</html>
