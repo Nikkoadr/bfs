@@ -87,7 +87,7 @@
 
   <body>
     <div class="container">
-      <h2 class="text-center mb-4">Pencarian Jalur BFS (Tanpa Diagonal)</h2>
+      <h2 class="text-center mb-4">Pencarian Jalur BFS</h2>
 
       <div class="d-flex justify-content-center gap-2 mb-4 flex-wrap">
         <button id="tombolBersih" class="btn btn-danger px-4">Bersihkan</button>
@@ -106,9 +106,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-      // ================================
       // KONFIGURASI GRID
-      // ================================
       const jumlahBaris = 25;
       const jumlahKolom = 30;
 
@@ -121,9 +119,7 @@
       let titikAwal = null;
       let titikTujuan = null;
 
-      // ================================
       // MEMBANGUN GRID
-      // ================================
       for (let baris = 0; baris < jumlahBaris; baris++) {
         gridSel[baris] = [];
         for (let kolom = 0; kolom < jumlahKolom; kolom++) {
@@ -154,9 +150,7 @@
         }
       }
 
-      // ================================
-      // AMBIL TETANGGA (4 ARAH)
-      // ================================
+      // AMBIL TETANGGA
       function ambilTetangga(baris, kolom) {
         const arah = [
           [1, 0],
@@ -179,9 +173,7 @@
         return hasil;
       }
 
-      // ================================
-      // BFS (KECEPATAN MAKSIMAL)
-      // ================================
+      // BFS
       tombolBFS.addEventListener("click", async () => {
         if (!titikAwal || !titikTujuan) {
           Swal.fire(
