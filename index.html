@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pencarian BFS — Peta</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --ukuran-sel: 26px;
+        --jarak: 3px;
+        --bg-peta: #e9f5ee;
+        --jalan: #ffffff;
+        --dikunjungi: #cfe2ff;
+        --jalur: #ffe066;
+        --hambatan: #343a40;
+        --awal: #2b8a3e;
+        --tujuan: #c92a2a;
+      }
+
+      body {
+        font-family: Inter, Arial, sans-serif;
+        background: linear-gradient(#f8fbf8, #eef5ee);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      h2 {
+        font-weight: 600;
+      }
+
+      #grid {
+        display: grid;
+        grid-template-columns: repeat(30, var(--ukuran-sel));
+        gap: var(--jarak);
+        background: var(--bg-peta);
+        padding: 14px;
+        border-radius: 14px;
+        width: fit-content;
+        margin: 0 auto;
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+      }
+
+      .sel {
+        width: var(--ukuran-sel);
+        height: var(--ukuran-sel);
+        background: var(--jalan);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        cursor: pointer;
+        user-select: none;
+        transition: background 0.15s;
+      }
+
+      .sel.hambatan {
+        background: var(--hambatan);
+      }
+
+      .sel.dikunjungi {
+        background: var(--dikunjungi);
+      }
+
+      .sel.jalur {
+        background: var(--jalur);
+      }
+
+      .sel.awal {
+        background: var(--awal);
+        color: #fff;
+        font-weight: bold;
+      }
+
+      .sel.tujuan {
+        background: var(--tujuan);
+        color: #fff;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h2 class="text-center mb-4">Pencarian Jalur BFS (Tanpa Diagonal)</h2>
+
+      <div class="d-flex justify-content-center gap-2 mb-4 flex-wrap">
+        <button id="tombolBersih" class="btn btn-danger px-4">Bersihkan</button>
+        <button id="tombolReset" class="btn btn-warning px-4">
+          Reset Start / Goal
+        </button>
+        <button id="tombolJalan" class="btn btn-success px-4">
+          Jalankan BFS
+        </button>
+      </div>
+
+      <div id="grid"></div>
+    </div>
+
+    <!-- SweetAlert -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+      // ================================
+      // KONFIGURASI GRID
+      // ================================
+      const jumlahBaris = 25;
+      const jumlahKolom = 30;
+
+      const elemenGrid = document.getElementById("grid");
+      const tombolBFS = document.getElementById("tombolJalan");
+      const tombolBersih = document.getElementById("tombolBersih");
+      const tombolReset = document.getElementById("tombolReset");
+
+      let gridSel = [];
+      let titikAwal = null;
+      let titikTujuan = null;
+
+      // ================================
+      // MEMBANGUN GRID
+      // ================================
+      for (let baris = 0; baris < jumlahBaris; baris++) {
+        gridSel[baris] = [];
+        for (let kolom = 0; kolom < jumlahKolom; kolom++) {
+          const sel = document.createElement("div");
+          sel.className = "sel";
+          sel.dataset.baris = baris;
+          sel.dataset.kolom = kolom;
+
+          sel.addEventListener("click", () => {
+            if (!titikAwal) {
+              titikAwal = { baris, kolom };
+              sel.classList.add("awal");
+              sel.textContent = "S";
+            } else if (
+              !titikTujuan &&
+              !(baris === titikAwal.baris && kolom === titikAwal.kolom)
+            ) {
+              titikTujuan = { baris, kolom };
+              sel.classList.add("tujuan");
+              sel.textContent = "G";
+            } else {
+              sel.classList.toggle("hambatan");
+            }
+          });
+
+          elemenGrid.appendChild(sel);
+          gridSel[baris][kolom] = sel;
+        }
+      }
+
+      // ================================
+      // AMBIL TETANGGA (4 ARAH)
+      // ================================
+      function ambilTetangga(baris, kolom) {
+        const arah = [
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ];
+
+        const hasil = [];
+
+        for (const [dx, dy] of arah) {
+          const b = baris + dx;
+          const k = kolom + dy;
+
+          if (b >= 0 && b < jumlahBaris && k >= 0 && k < jumlahKolom) {
+            hasil.push({ baris: b, kolom: k });
+          }
+        }
+
+        return hasil;
+      }
+
+      // ================================
+      // BFS (KECEPATAN MAKSIMAL)
+      // ================================
+      tombolBFS.addEventListener("click", async () => {
+        if (!titikAwal || !titikTujuan) {
+          Swal.fire(
+            "Error",
+            "Tentukan Start dan Goal terlebih dahulu!",
+            "error"
+          );
+          return;
+        }
+
+        const antrian = [];
+        const dikunjungi = Array.from({ length: jumlahBaris }, () =>
+          Array(jumlahKolom).fill(false)
+        );
+        const induk = Array.from({ length: jumlahBaris }, () =>
+          Array(jumlahKolom).fill(null)
+        );
+
+        antrian.push(titikAwal);
+        dikunjungi[titikAwal.baris][titikAwal.kolom] = true;
+
+        const jeda = () => new Promise((r) => setTimeout(r, 10));
+
+        let ditemukan = false;
+
+        while (antrian.length > 0) {
+          const node = antrian.shift();
+
+          if (
+            node.baris === titikTujuan.baris &&
+            node.kolom === titikTujuan.kolom
+          ) {
+            ditemukan = true;
+            break;
+          }
+
+          for (const tetangga of ambilTetangga(node.baris, node.kolom)) {
+            if (dikunjungi[tetangga.baris][tetangga.kolom]) continue;
+            if (
+              gridSel[tetangga.baris][tetangga.kolom].classList.contains(
+                "hambatan"
+              )
+            )
+              continue;
+
+            dikunjungi[tetangga.baris][tetangga.kolom] = true;
+            induk[tetangga.baris][tetangga.kolom] = node;
+            antrian.push(tetangga);
+
+            gridSel[tetangga.baris][tetangga.kolom].classList.add("dikunjungi");
+            await jeda();
+          }
+        }
+
+        if (ditemukan) {
+          let curr = titikTujuan;
+          while (curr) {
+            gridSel[curr.baris][curr.kolom].classList.add("jalur");
+            curr = induk[curr.baris][curr.kolom];
+            await jeda();
+          }
+        } else {
+          Swal.fire("Gagal", "Jalur tidak ditemukan", "error");
+        }
+      });
+
+      tombolBersih.onclick = () => location.reload();
+      tombolReset.onclick = () => location.reload();
+    </script>
+  </body>
+</html>
